@@ -1,0 +1,85 @@
+name: Auto-update Homebrew formula
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  repository_dispatch:
+    types: [release-published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: formula-update
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Update formula if new release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          RELEASE_JSON=$(gh api repos/fullsend-ai/fullsend/releases/latest)
+
+          TAG=$(echo "$RELEASE_JSON" | jq -r '.tag_name')
+          VERSION="${TAG#v}"
+          CURRENT=$(grep '^  version "' Formula/fullsend.rb | sed 's/.*"\(.*\)".*/\1/')
+
+          if [ "$VERSION" = "$CURRENT" ]; then
+            echo "Already up to date ($VERSION)"
+            exit 0
+          fi
+
+          echo "Updating $CURRENT -> $VERSION"
+
+          CHECKSUMS_URL=$(echo "$RELEASE_JSON" | jq -r '.assets[] | select(.name == "checksums.txt") | .browser_download_url')
+          CHECKSUMS_CONTENT=$(curl -sL "$CHECKSUMS_URL")
+
+          get_sha() {
+            echo "$CHECKSUMS_CONTENT" | grep "fullsend_${VERSION}_${1}.tar.gz" | awk '{print $1}'
+          }
+
+          SHA_DARWIN_ARM64=$(get_sha darwin_arm64)
+          SHA_DARWIN_AMD64=$(get_sha darwin_amd64)
+          SHA_LINUX_ARM64=$(get_sha linux_arm64)
+          SHA_LINUX_AMD64=$(get_sha linux_amd64)
+
+          for var in SHA_DARWIN_ARM64 SHA_DARWIN_AMD64 SHA_LINUX_ARM64 SHA_LINUX_AMD64; do
+            if [ -z "${!var}" ]; then
+              echo "ERROR: missing SHA for $var"
+              exit 1
+            fi
+          done
+
+          sed -i "s/^  version \".*\"/  version \"${VERSION}\"/" Formula/fullsend.rb
+
+          awk -v da64="$SHA_DARWIN_ARM64" -v di64="$SHA_DARWIN_AMD64" \
+              -v la64="$SHA_LINUX_ARM64" -v li64="$SHA_LINUX_AMD64" '
+            /url.*darwin_arm64/ { arch = "da64" }
+            /url.*darwin_amd64/ { arch = "di64" }
+            /url.*linux_arm64/  { arch = "la64" }
+            /url.*linux_amd64/  { arch = "li64" }
+            /sha256 "/ && arch {
+              if (arch == "da64") sub(/"[^"]*"/, "\"" da64 "\"")
+              if (arch == "di64") sub(/"[^"]*"/, "\"" di64 "\"")
+              if (arch == "la64") sub(/"[^"]*"/, "\"" la64 "\"")
+              if (arch == "li64") sub(/"[^"]*"/, "\"" li64 "\"")
+              arch = ""
+            }
+            { print }
+          ' Formula/fullsend.rb > Formula/fullsend.rb.tmp && mv Formula/fullsend.rb.tmp Formula/fullsend.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/fullsend.rb
+          git diff --cached --quiet && exit 0
+          git commit -m "Update fullsend to ${VERSION}"
+          git push
