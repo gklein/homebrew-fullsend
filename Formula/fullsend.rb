@@ -30,12 +30,6 @@ class Fullsend < Formula
     bin.install "fullsend"
   end
 
-  def post_install
-    if OS.mac?
-      system "xattr", "-dr", "com.apple.quarantine", "#{bin}/fullsend"
-    end
-  end
-
   test do
     assert_match version.to_s, shell_output("#{bin}/fullsend version")
   end
