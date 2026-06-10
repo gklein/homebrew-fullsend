@@ -1,28 +1,28 @@
 class Fullsend < Formula
   desc "Fully autonomous agentic development for GitHub-hosted organizations"
   homepage "https://github.com/fullsend-ai/fullsend"
-  version "0.15.0"
+  version "0.16.0"
   license "Apache-2.0"
 
   on_macos do
     on_arm do
       url "https://github.com/fullsend-ai/fullsend/releases/download/v#{version}/fullsend_#{version}_darwin_arm64.tar.gz"
-      sha256 "da35b8ea400a01b6687bcadcef2f6ec25558145b41ec6ddb3c0aaa09141396c2"
+      sha256 "fcff8ffc56dedfd42a2574ed177d2549a413c8bad3d8bf78515b03d4db0992c8"
     end
     on_intel do
       url "https://github.com/fullsend-ai/fullsend/releases/download/v#{version}/fullsend_#{version}_darwin_amd64.tar.gz"
-      sha256 "a55a39dd475afb29fdf02b3689c8b886e6aa1c277c7bc94fc7fa610c863f7835"
+      sha256 "9199a68baf684797a985ef960ea1ddb529ba6ba4e1ce53f95b91bfd5500f423d"
     end
   end
 
   on_linux do
     on_arm do
       url "https://github.com/fullsend-ai/fullsend/releases/download/v#{version}/fullsend_#{version}_linux_arm64.tar.gz"
-      sha256 "4d73f541033b85146ebc1e44ecd425c1555af3b46bfda698c4c18658b0bb8b6d"
+      sha256 "df326f73306cb569099b16e71f3daf6aaa90388c8f857dbd8172cb661ee80c5e"
     end
     on_intel do
       url "https://github.com/fullsend-ai/fullsend/releases/download/v#{version}/fullsend_#{version}_linux_amd64.tar.gz"
-      sha256 "b3866fe95b401e48fe6432f0e0672f4a2383ca4615b331901cadcf5d8a4109b5"
+      sha256 "f56626ef0c85440129b32b04a3d4c4aa7f88d5d75d95aa7953e45c182612f9e9"
     end
   end
 
